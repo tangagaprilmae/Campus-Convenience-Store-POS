@@ -3,23 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Campus Convenience Store point-of-sale interface prototype.">
+  <meta name="description" content="Campus Convenience Store point of sale: products, orders, cash payment, and receipts.">
+  <meta name="theme-color" content="#176b46">
   <title>Campus Convenience Store | POS</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <script src="script.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to products and checkout</a>
   <header class="topbar">
-    <div class="brand"><span class="brand-mark" aria-hidden="true">C<span>+</span></span><div><h1>Campus Convenience Store</h1><p>POINT OF SALE</p></div></div>
-    <span class="stage-badge"><span aria-hidden="true"></span>Interface preview</span>
+    <div class="header-inner mx-auto flex w-full max-w-[1360px] flex-wrap items-center justify-between gap-4">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">C<span>+</span></span><div><h1>Campus Convenience Store</h1><p>Point of sale</p></div></div>
+      <span class="stage-badge"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M4 6h12v11H4zM3 6l2-3h10l2 3M8 17v-5h4v5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Campus essentials</span>
+    </div>
   </header>
 
-  <main class="workspace">
+  <main id="main-content" class="workspace" tabindex="-1">
     <section class="catalog" aria-labelledby="products-heading">
-      <div class="section-heading"><div><p class="eyebrow">THE CAMPUS ESSENTIALS</p><h2 id="products-heading">Products</h2><p class="section-description">Everyday picks for your campus day.</p></div><span class="count">6 products</span></div>
+      <div class="section-heading"><div><h2 id="products-heading">Campus essentials</h2><p class="section-description">Snacks, drinks, and supplies. Pick what you need.</p></div><span class="count">6 products</span></div>
       <div id="product-grid" class="product-grid"></div>
       <noscript><p>Please enable JavaScript to display the product catalog.</p></noscript>
-      <p class="preview-note"><span aria-hidden="true">ⓘ</span> Add products to build your order, then confirm the cash payment.</p>
+      <p class="preview-note"><span aria-hidden="true">ⓘ</span> Select a product to add it to the order. Adjust quantities at checkout.</p>
     </section>
 
     <aside class="checkout" aria-label="Order and payment">
@@ -31,12 +37,12 @@
       </section>
 
       <section class="panel payment-panel" aria-labelledby="payment-heading">
-        <div class="panel-heading"><h2 id="payment-heading">Payment</h2><span class="payment-label">CASH</span></div>
+        <div class="panel-heading"><h2 id="payment-heading">Cash payment</h2><span class="payment-label">Cash</span></div>
         <form id="payment-form" novalidate>
           <label for="cash-amount">Amount received</label>
-          <div class="amount-field"><span aria-hidden="true">₱</span><input id="cash-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" aria-describedby="payment-note payment-message"></div>
+          <div class="amount-field"><span aria-hidden="true">₱</span><input id="cash-amount" name="cash-amount" autocomplete="off" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" aria-describedby="payment-note payment-message"></div>
           <div class="change-row"><span>Change</span><strong id="payment-change">₱0.00</strong></div>
-          <button class="complete-button" type="submit">Confirm Payment <span aria-hidden="true">→</span></button>
+          <button class="complete-button" type="submit">Confirm Payment <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="m4 10 4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           <p id="payment-note" class="payment-note">Enter the cash received in pesos.</p>
           <p id="payment-message" class="payment-message" role="status" aria-live="polite"></p>
         </form>
@@ -52,7 +58,7 @@
       </section>
     </aside>
     <section id="receipt" class="panel receipt-panel" aria-labelledby="receipt-heading" hidden>
-      <div class="receipt-heading"><div><h2 id="receipt-heading">Digital receipt</h2><p>Campus Convenience Store</p></div><span class="payment-label">PAID · CASH</span></div>
+      <div class="receipt-heading"><div><h2 id="receipt-heading">Digital receipt</h2><p>Campus Convenience Store</p></div><span class="payment-label">Paid in cash</span></div>
       <p class="receipt-reference">Transaction reference: <strong id="receipt-reference"></strong></p>
       <p id="receipt-date" class="receipt-date"></p>
       <div class="receipt-table-wrap">
@@ -70,6 +76,6 @@
       <p class="payment-note">Thank you for shopping with us. Select New Transaction for the next customer.</p>
     </section>
   </main>
-  <footer>Campus Convenience Store <span aria-hidden="true">·</span> Receipt and reset / Stage 04</footer>
+  <footer class="flex flex-wrap items-center justify-between gap-2"><span>Campus Convenience Store</span><span>Products → Order → Payment → Receipt</span></footer>
 </body>
 </html>
