@@ -16,6 +16,7 @@ class Element {
   closest() { return this.tag === "button" ? this : this.parent?.closest(); }
   matches(selector) {
     if (this.tag !== "button") return false;
+    if (selector === ".add-button" && !this.className?.split(" ").includes("add-button")) return false;
     if (selector.includes(":not(:disabled)") && this.disabled) return false;
     if (selector.includes('[type="submit"]') && this.type !== "submit") return false;
     for (const match of selector.matchAll(/\[data-([\w-]+)="([^"]+)"\]/g)) {
@@ -27,12 +28,14 @@ class Element {
   querySelectorAll(selector = "button") { return this.children.flatMap(child => [...(child.matches(selector) ? [child] : []), ...child.querySelectorAll(selector)]); }
   querySelector(selector = "button") { return this.querySelectorAll(selector)[0] || null; }
   focus() { if (!this.disabled) this.ownerDocument.activeElement = this; }
+  showModal() { this.open = true; }
+  close() { this.open = false; }
 }
 
 function setup() {
   // Read real markup IDs so a missing or renamed page element fails the suite.
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  const entries = [...html.matchAll(/<([a-z]+)\b[^>]*\bid="([^"]+)"/g)];
+  const entries = [...html.matchAll(/<([a-z][a-z0-9]*)\b[^>]*\bid="([^"]+)"/g)];
   const nodes = Object.fromEntries(entries.map(match => [match[2], new Element(match[1])]));
   assert.equal(Object.keys(nodes).length, entries.length, "HTML IDs must be unique");
   nodes["cash-amount"].value = "";
@@ -60,7 +63,10 @@ function setup() {
     nodes["cash-amount"].validity.badInput = badInput;
     nodes["payment-form"].listeners.submit({ preventDefault() {} });
   };
-  const reset = () => nodes["new-transaction"].listeners.click();
+  const reset = () => {
+    nodes["new-transaction"].listeners.click();
+    if (nodes["reset-modal"].open) nodes["confirm-reset"].listeners.click();
+  };
   return { nodes, add, rows, press, pay, reset, document };
 }
 
@@ -293,4 +299,61 @@ test("all six products work in the order table through payment and reset", () =>
   assert.equal(nodes["cart-table-wrap"].hidden, true);
   assert.equal(nodes["cart-table-wrap"].scrollTop, 0);
   assert.equal(nodes["cart-table-wrap"].scrollLeft, 0);
+});
+
+test("product photo modal adds the selected item and closes without changing other items", () => {
+  const { nodes, add } = setup();
+  add(0);
+  const cards = nodes["product-grid"].children;
+  cards[4].children[0].listeners.click();
+  assert.equal(nodes["product-modal"].open, true);
+  assert.equal(nodes["product-modal-title"].textContent, "Ballpen (piece)");
+  assert.equal(nodes["product-modal-price"].textContent, "₱12.00");
+  assert.equal(nodes["product-modal-image"].src, "assets/products/ballpen.jpg");
+  nodes["product-modal-add"].listeners.click();
+  assert.equal(nodes["product-modal"].open, false);
+  assert.equal(nodes["order-total"].textContent, "₱30.00");
+  cards[5].children[0].listeners.click();
+  nodes["close-product"].listeners.click();
+  assert.equal(nodes["order-total"].textContent, "₱30.00");
+});
+
+test("canceling a new transaction preserves the unpaid order and cash", () => {
+  const { nodes, add, rows } = setup();
+  add(0); add(0);
+  nodes["cash-amount"].value = "50";
+  nodes["new-transaction"].listeners.click();
+  assert.equal(nodes["reset-modal"].open, true);
+  assert.equal(rows().length, 1);
+  nodes["cancel-reset"].listeners.click();
+  assert.equal(nodes["reset-modal"].open, false);
+  assert.equal(nodes["order-total"].textContent, "₱36.00");
+  assert.equal(nodes["cash-amount"].value, "50");
+  nodes["new-transaction"].listeners.click();
+  nodes["confirm-reset"].listeners.click();
+  assert.equal(nodes["reset-modal"].open, false);
+  assert.equal(rows().length, 0);
+  assert.equal(nodes["cash-amount"].value, "");
+});
+
+test("receipt modal reopens the paid snapshot and starts a fresh transaction", () => {
+  const { nodes, add, pay } = setup();
+  add(1); pay("50");
+  assert.equal(nodes["receipt-modal"].open, true);
+  assert.equal(nodes["view-receipt"].hidden, false);
+  const reference = nodes["receipt-reference"].textContent;
+  nodes["close-receipt"].listeners.click();
+  assert.equal(nodes["receipt-modal"].open, false);
+  nodes["view-receipt"].listeners.click();
+  assert.equal(nodes["receipt-modal"].open, true);
+  assert.equal(nodes["receipt-reference"].textContent, reference);
+  const photoButton = nodes["product-grid"].children[0].children[0];
+  assert.equal(photoButton.disabled, undefined);
+  photoButton.listeners.click();
+  assert.equal(nodes["product-modal-add"].disabled, true);
+  nodes["receipt-new-transaction"].listeners.click();
+  assert.equal(nodes["receipt-modal"].open, false);
+  assert.equal(nodes["product-modal"].open, false);
+  assert.equal(nodes["view-receipt"].hidden, true);
+  assert.equal(nodes["order-total"].textContent, "₱0.00");
 });

@@ -1,11 +1,11 @@
-// Product definitions and artwork.
+// Product definitions and locally stored photographs.
 const products = [
-  { name: "Instant Noodles", price: 18, art: '<path d="M12 27h40l-6 27H18z" fill="#d9a24b"/><path d="M10 27h44M18 35h28" stroke="#886b36"/><path d="M23 20c-5-5 5-5 0-11M33 20c-5-5 5-5 0-11M43 20c-5-5 5-5 0-11" stroke="#b5ba95"/><path d="M24 42h16" stroke="#fff5d6" stroke-width="4"/>' },
-  { name: "Potato Chips", price: 25, art: '<path d="M18 9h29l-3 12 3 34H18l3-34z" fill="#e5b967"/><path d="M19 13h27M19 51h27" stroke="#a67b36"/><ellipse cx="32" cy="33" rx="9" ry="11" fill="#fff0b9"/><path d="M29 28l6 10M33 27l5 9" stroke="#d5aa50"/>' },
-  { name: "Soft Drink (Can)", price: 25, art: '<rect x="21" y="12" width="25" height="43" rx="5" fill="#be7863"/><ellipse cx="33.5" cy="12" rx="12.5" ry="4" fill="#d8dedb"/><path d="M29 12h8" stroke="#879a92"/><path d="M22 37l23-13v10L22 47z" fill="#f8e9dd"/>' },
-  { name: "Bottled Water", price: 20, art: '<rect x="28" y="7" width="12" height="7" rx="2" fill="#659aaf"/><path d="M28 14h12v6l6 8v25q0 5-5 5H27q-5 0-5-5V28l6-8z" fill="#cee7ed" stroke="#91b9c5"/><path d="M22 32h24v14H22" fill="#78a7b6"/><path d="M28 38h12M28 50v3" stroke="#f1fcff" stroke-width="3"/>' },
-  { name: "Ballpen (piece)", price: 12, art: '<g transform="rotate(35 32 32)"><path d="M29 14h8v34h-8z" fill="#727da2"/><path d="M29 48h8l-4 10z" fill="#b4bacb"/><path d="M33 58v3" stroke="#4e587a"/><rect x="28" y="6" width="10" height="19" rx="3" fill="#434f74"/><path d="M39 10v15" stroke="#8993b2" stroke-width="3"/></g>' },
-  { name: "Notebook (piece)", price: 35, art: '<rect x="17" y="10" width="34" height="46" rx="3" fill="#73a084"/><path d="M24 10v46" stroke="#456d54" stroke-width="2"/><rect x="30" y="22" width="15" height="13" rx="1" fill="#eaf2e7"/><path d="M33 27h9M33 31h7" stroke="#a3baaa"/><path d="M14 17h8M14 25h8M14 33h8M14 41h8M14 49h8" stroke="#a6b5a6" stroke-width="2"/>' }
+  { name: "Instant Noodles", price: 18, image: "assets/products/instant-noodles.jpg", alt: "Lucky Me chicken-flavoured instant noodle packet", credit: "Product photo: Tradewinds Oriental Shop", source: "https://tradewindsorientalshop.co.uk/products/lucky-me-chicken-flavour-instant-noodles-55g" },
+  { name: "Potato Chips", price: 25, image: "assets/products/potato-chips.jpg", alt: "Jack 'n Jill Piattos cheese potato crisps bag", credit: "Product photo: Citimart", source: "https://www.citimartdelivery.com.ph/products/1087424" },
+  { name: "Soft Drink (Can)", price: 25, image: "assets/products/soft-drink.jpg", alt: "Red Coca-Cola soft drink can", credit: "Product photo: AlaMesa", source: "https://www.alamesacuba.com/en/la-habana/delivery/details/regular-coca-cola-soda-330-ml/" },
+  { name: "Bottled Water", price: 20, image: "assets/products/bottled-water.jpg", alt: "Clear Evian water bottle with a pink cap", credit: "Photo: James Tamim / Wikimedia Commons", source: "https://commons.wikimedia.org/wiki/File:Evian_Label-Free_Bottle.jpg", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/" },
+  { name: "Ballpen (piece)", price: 12, image: "assets/products/ballpen.jpg", alt: "Blue BIC ballpoint pen and cap", credit: "Photo: Trounce / Wikimedia Commons", source: "https://commons.wikimedia.org/wiki/File:03-BICcristal2008-03-26.jpg", license: "CC BY 3.0", licenseUrl: "https://creativecommons.org/licenses/by/3.0/" },
+  { name: "Notebook (piece)", price: 35, image: "assets/products/notebook.png", alt: "Spiral-bound notebook with squared paper", credit: "Photo: Tuffstein / Wikimedia Commons", source: "https://commons.wikimedia.org/wiki/File:Notebook.png", license: "CC BY 3.0", licenseUrl: "https://creativecommons.org/licenses/by/3.0/" }
 ];
 
 const priceFormatter = new Intl.NumberFormat("en-PH", {
@@ -35,10 +35,20 @@ products.forEach((product, productId) => {
   card.className = "product-card";
   card.dataset.productId = productId;
 
-  // Decorative SVG artwork uses only the trusted, local product definitions.
-  const artwork = document.createElement("div");
+  const artwork = document.createElement("button");
+  artwork.type = "button";
   artwork.className = "product-art";
-  artwork.innerHTML = `<svg viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${product.art}</svg>`;
+  artwork.setAttribute("aria-label", `View ${product.name} details`);
+  artwork.setAttribute("aria-haspopup", "dialog");
+  artwork.setAttribute("aria-controls", "product-modal");
+  const image = document.createElement("img");
+  image.src = product.image;
+  image.alt = product.alt;
+  image.width = 320;
+  image.height = 200;
+  image.decoding = "async";
+  artwork.append(image);
+  artwork.addEventListener("click", () => showProductDetails(productId));
 
   const name = document.createElement("h3");
   name.textContent = product.name;
@@ -78,10 +88,77 @@ const receiptItems = document.getElementById("receipt-items");
 const receiptFields = ["receipt-reference", "receipt-date", "receipt-total", "receipt-cash", "receipt-change"];
 let completedTransaction = null;
 let transactionSequence = 0;
+let selectedProductId = null;
+const productModal = document.getElementById("product-modal");
+const receiptModal = document.getElementById("receipt-modal");
+const resetModal = document.getElementById("reset-modal");
+const viewReceipt = document.getElementById("view-receipt");
+
+// Native dialogs provide focus containment, Escape dismissal, and inert background.
+function openModal(dialog) {
+  if (!dialog.open) dialog.showModal();
+}
+
+[
+  [productModal, "close-product"],
+  [receiptModal, "close-receipt"],
+  [resetModal, "cancel-reset"]
+].forEach(([dialog, closeId]) => {
+  document.getElementById(closeId).addEventListener("click", () => dialog.close());
+  dialog.addEventListener("keydown", event => {
+    if (event.key !== "Tab") return;
+    const controls = dialog.querySelectorAll('button:not(:disabled), a[href]:not([hidden]), input:not(:disabled)');
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+  dialog.addEventListener("click", event => {
+    if (event.target !== dialog) return;
+    const bounds = dialog.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right ||
+        event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+  });
+});
+
+function showProductDetails(productId) {
+  const product = products[productId];
+  selectedProductId = productId;
+  document.getElementById("product-modal-title").textContent = product.name;
+  const image = document.getElementById("product-modal-image");
+  image.src = product.image;
+  image.alt = product.alt;
+  document.getElementById("product-modal-price").textContent = formatCentavos(Math.round(product.price * 100));
+  const source = document.getElementById("product-photo-source");
+  source.textContent = product.credit;
+  source.href = product.source;
+  const license = document.getElementById("product-photo-license");
+  license.textContent = product.license || "";
+  license.href = product.licenseUrl || product.source;
+  license.hidden = !product.license;
+  document.getElementById("product-modal-add").disabled = Boolean(completedTransaction);
+  openModal(productModal);
+}
+
+document.getElementById("product-modal-add").addEventListener("click", () => {
+  if (selectedProductId === null || completedTransaction) return;
+  addToCart(selectedProductId);
+  productModal.close();
+});
+viewReceipt.addEventListener("click", () => {
+  if (completedTransaction) openModal(receiptModal);
+});
+document.getElementById("confirm-reset").addEventListener("click", resetTransaction);
+document.getElementById("receipt-new-transaction").addEventListener("click", resetTransaction);
 
 // Keep the paid order unchanged until the next customer starts a transaction.
 function setTransactionLocked(locked) {
-  productGrid.querySelectorAll("button").forEach(button => { button.disabled = locked; });
+  productGrid.querySelectorAll(".add-button").forEach(button => { button.disabled = locked; });
   cartItems.querySelectorAll("button").forEach(button => {
     button.disabled = locked || (button.dataset.action === "decrease" && cart.get(Number(button.dataset.productId)) === 1);
   });
@@ -124,25 +201,37 @@ function generateReceipt(totalCentavos, paidCentavos) {
   document.getElementById("receipt-cash").textContent = formatCentavos(paidCentavos);
   document.getElementById("receipt-change").textContent = formatCentavos(completedTransaction.changeCentavos);
   receipt.hidden = false;
+  viewReceipt.hidden = false;
   setTransactionLocked(true);
+  openModal(receiptModal);
 }
 
 // Clear every customer-specific value while keeping the catalog and listeners.
 function resetTransaction() {
+  [productModal, receiptModal, resetModal].forEach(dialog => {
+    if (dialog.open) dialog.close();
+  });
   completedTransaction = null;
   cart.clear();
   cashInput.value = "";
   receiptItems.replaceChildren();
   receiptFields.forEach(id => { document.getElementById(id).textContent = ""; });
   receipt.hidden = true;
+  viewReceipt.hidden = true;
   cartTableWrap.scrollTop = 0;
   cartTableWrap.scrollLeft = 0;
   setTransactionLocked(false);
   renderCart();
-  productGrid.querySelector("button")?.focus();
+  productGrid.querySelector(".add-button")?.focus();
 }
 
-document.getElementById("new-transaction").addEventListener("click", resetTransaction);
+document.getElementById("new-transaction").addEventListener("click", () => {
+  if (cart.size > 0 && !completedTransaction) {
+    openModal(resetModal);
+    return;
+  }
+  resetTransaction();
+});
 
 // The cart and payment share one calculation, using integer centavos.
 function getTotalCentavos() {
@@ -308,7 +397,8 @@ function renderCart() {
     const subtotalCell = document.createElement("td");
     subtotalCell.append(subtotal);
     quantityCell.append(quantityControls);
-    const remove = createCartButton("Remove", "remove", productId, `Remove ${product.name} from cart`);
+    const remove = createCartButton("\u00d7", "remove", productId, `Remove ${product.name} from cart`);
+    remove.title = `Remove ${product.name} from cart`;
     const actionCell = document.createElement("td");
     actionCell.append(remove);
     row.append(name, unitPrice, quantityCell, subtotalCell, actionCell);
@@ -327,7 +417,7 @@ function renderCart() {
     const replacement = cartItems.querySelector(`[data-product-id="${focusedId}"][data-action="${focusedAction}"]`);
     const fallback = cartItems.querySelector(`[data-product-id="${focusedId}"][data-action="increase"]`)
       || cartItems.querySelector("button:not(:disabled)")
-      || productGrid.querySelector("button");
+      || productGrid.querySelector(".add-button");
     (replacement && !replacement.disabled ? replacement : fallback)?.focus();
   }
 }
