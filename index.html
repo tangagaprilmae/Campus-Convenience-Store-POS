@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Campus Convenience Store point-of-sale interface prototype.">
+  <title>Campus Convenience Store | POS</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">C<span>+</span></span><div><h1>Campus Convenience Store</h1><p>POINT OF SALE</p></div></div>
+    <span class="stage-badge"><span aria-hidden="true"></span>Interface preview</span>
+  </header>
+
+  <main class="workspace">
+    <section class="catalog" aria-labelledby="products-heading">
+      <div class="section-heading"><div><p class="eyebrow">THE CAMPUS ESSENTIALS</p><h2 id="products-heading">Products</h2><p class="section-description">Everyday picks for your campus day.</p></div><span class="count">6 products</span></div>
+      <div id="product-grid" class="product-grid"></div>
+      <noscript><p>Please enable JavaScript to display the product catalog.</p></noscript>
+      <p class="preview-note"><span aria-hidden="true">ⓘ</span> Add products to build your order. Payment functionality will be added in a later stage.</p>
+    </section>
+
+    <aside class="checkout" aria-label="Order and payment">
+      <section class="panel order-panel" aria-labelledby="order-heading">
+        <div class="panel-heading"><h2 id="order-heading">Order summary</h2><span id="item-count" class="item-count" aria-live="polite">0 items</span></div>
+        <div id="empty-order" class="empty-order"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M9 10h5l5 23h19l5-17H16M22 40h.01M36 40h.01" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Your order is empty</h3><p>Add a product to get started.</p></div>
+        <ul id="cart-items" class="cart-items" aria-label="Products in your order" hidden></ul>
+        <div class="totals"><div><span>Subtotal</span><span id="order-subtotal">₱0.00</span></div><div class="total"><span>Total</span><span id="order-total">₱0.00</span></div></div>
+      </section>
+
+      <section class="panel payment-panel" aria-labelledby="payment-heading">
+        <div class="panel-heading"><h2 id="payment-heading">Payment</h2><span class="payment-label">CASH</span></div>
+        <label for="cash-amount">Amount received</label>
+        <div class="amount-field"><span aria-hidden="true">₱</span><input id="cash-amount" type="text" placeholder="0.00" disabled aria-describedby="payment-note"></div>
+        <div class="change-row"><span>Change</span><strong>₱0.00</strong></div>
+        <button class="complete-button" type="button" disabled>Complete payment <span aria-hidden="true">→</span></button>
+        <p id="payment-note" class="payment-note">Payment is unavailable in this UI preview.</p>
+      </section>
+    </aside>
+  </main>
+  <footer>Campus Convenience Store <span aria-hidden="true">·</span> Shopping cart / Stage 02</footer>
+</body>
+</html>
