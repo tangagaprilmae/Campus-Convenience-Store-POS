@@ -48,9 +48,28 @@
             <div><dt>Change</dt><dd id="confirmed-change"></dd></div>
           </dl>
         </div>
+        <button id="new-transaction" class="new-transaction-button" type="button">New Transaction</button>
       </section>
     </aside>
+    <section id="receipt" class="panel receipt-panel" aria-labelledby="receipt-heading" hidden>
+      <div class="receipt-heading"><div><h2 id="receipt-heading">Digital receipt</h2><p>Campus Convenience Store</p></div><span class="payment-label">PAID · CASH</span></div>
+      <p class="receipt-reference">Transaction reference: <strong id="receipt-reference"></strong></p>
+      <p id="receipt-date" class="receipt-date"></p>
+      <div class="receipt-table-wrap">
+        <table class="receipt-table">
+          <caption class="sr-only">Purchased products</caption>
+          <thead><tr><th scope="col">Product</th><th scope="col">Quantity</th><th scope="col">Unit price</th><th scope="col">Subtotal</th></tr></thead>
+          <tbody id="receipt-items"></tbody>
+        </table>
+      </div>
+      <dl class="receipt-totals">
+        <div><dt>Total amount</dt><dd id="receipt-total"></dd></div>
+        <div><dt>Cash received</dt><dd id="receipt-cash"></dd></div>
+        <div><dt>Change</dt><dd id="receipt-change"></dd></div>
+      </dl>
+      <p class="payment-note">Thank you for shopping with us. Select New Transaction for the next customer.</p>
+    </section>
   </main>
-  <footer>Campus Convenience Store <span aria-hidden="true">·</span> Cash payment / Stage 03</footer>
+  <footer>Campus Convenience Store <span aria-hidden="true">·</span> Receipt and reset / Stage 04</footer>
 </body>
 </html>

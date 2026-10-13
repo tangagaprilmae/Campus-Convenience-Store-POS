@@ -101,6 +101,24 @@ button:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
 .remove-button:hover { color: #a14437; }
 footer { max-width: 1440px; margin: 0 auto; padding: 8px 5% 24px; color: #8d978f; font-size: 11px; }
 footer span { padding: 0 6px; }
+.new-transaction-button { width: 100%; padding: 12px; margin-top: 18px; border: 1px solid #d5e8dc; border-radius: 7px; background: var(--green-light); color: var(--green-dark); font-weight: 600; }
+.new-transaction-button:hover { background: #dbeee2; }
+.receipt-panel { grid-column: 1 / -1; }
+.receipt-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.receipt-heading h2 { font-size: 20px; }
+.receipt-heading p { font-size: 15px; margin-top: 6px; }
+.receipt-reference { margin-top: 18px; font-size: 12px; overflow-wrap: anywhere; }
+.receipt-date { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.receipt-table-wrap { overflow-x: auto; margin-top: 22px; }
+.receipt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.receipt-table th, .receipt-table td { padding: 12px 8px; border-bottom: 1px solid var(--border); text-align: right; font-variant-numeric: tabular-nums; }
+.receipt-table th { font-size: 12px; font-weight: 600; }
+.receipt-table th:first-child, .receipt-table td:first-child { text-align: left; padding-left: 0; }
+.receipt-totals { max-width: 340px; margin: 20px 0 0 auto; }
+.receipt-totals > div { display: flex; justify-content: space-between; gap: 16px; margin-top: 10px; }
+.receipt-totals dd { margin: 0; font-weight: 600; }
+.receipt-totals > div:first-child { font-size: 18px; color: var(--green-dark); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 /* Smaller laptops and mobile screens */
 @media (max-width: 1150px) { .workspace { grid-template-columns: minmax(0, 1fr) 310px; gap: 22px; padding-inline: 4%; } .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

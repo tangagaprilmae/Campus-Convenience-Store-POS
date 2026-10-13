@@ -55,6 +55,75 @@ const cashInput = document.getElementById("cash-amount");
 const paymentMessage = document.getElementById("payment-message");
 const paymentChange = document.getElementById("payment-change");
 const paymentConfirmation = document.getElementById("payment-confirmation");
+const confirmButton = paymentForm.querySelector('button[type="submit"]');
+const receipt = document.getElementById("receipt");
+const receiptItems = document.getElementById("receipt-items");
+const receiptFields = ["receipt-reference", "receipt-date", "receipt-total", "receipt-cash", "receipt-change"];
+let completedTransaction = null;
+let transactionSequence = 0;
+
+// Keep the paid order unchanged until the next customer starts a transaction.
+function setTransactionLocked(locked) {
+  productGrid.querySelectorAll("button").forEach(button => { button.disabled = locked; });
+  cartItems.querySelectorAll("button").forEach(button => {
+    button.disabled = locked || (button.dataset.action === "decrease" && cart.get(Number(button.dataset.productId)) === 1);
+  });
+  cashInput.disabled = locked;
+  confirmButton.disabled = locked;
+}
+
+// Copy the purchased items and amounts so the receipt is a payment snapshot.
+function generateReceipt(totalCentavos, paidCentavos) {
+  const now = new Date();
+  transactionSequence += 1;
+  completedTransaction = {
+    reference: `CCS-${now.getTime()}-${String(transactionSequence).padStart(4, "0")}`,
+    date: now,
+    items: Array.from(cart, ([productId, quantity]) => ({
+      name: products[productId].name,
+      quantity,
+      unitCentavos: Math.round(products[productId].price * 100)
+    })),
+    totalCentavos,
+    paidCentavos,
+    changeCentavos: paidCentavos - totalCentavos
+  };
+  receiptItems.replaceChildren();
+  completedTransaction.items.forEach(item => {
+    const row = document.createElement("tr");
+    [item.name, item.quantity, priceFormatter.format(item.unitCentavos / 100),
+      priceFormatter.format(item.unitCentavos * item.quantity / 100)].forEach(value => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    });
+    receiptItems.append(row);
+  });
+  document.getElementById("receipt-reference").textContent = completedTransaction.reference;
+  document.getElementById("receipt-date").textContent = new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila"
+  }).format(now) + " (Asia/Manila)";
+  document.getElementById("receipt-total").textContent = priceFormatter.format(totalCentavos / 100);
+  document.getElementById("receipt-cash").textContent = priceFormatter.format(paidCentavos / 100);
+  document.getElementById("receipt-change").textContent = priceFormatter.format(completedTransaction.changeCentavos / 100);
+  receipt.hidden = false;
+  setTransactionLocked(true);
+}
+
+// Clear every customer-specific value while keeping the catalog and listeners.
+function resetTransaction() {
+  completedTransaction = null;
+  cart.clear();
+  cashInput.value = "";
+  receiptItems.replaceChildren();
+  receiptFields.forEach(id => { document.getElementById(id).textContent = ""; });
+  receipt.hidden = true;
+  setTransactionLocked(false);
+  renderCart();
+  productGrid.querySelector("button")?.focus();
+}
+
+document.getElementById("new-transaction").addEventListener("click", resetTransaction);
 
 // The cart and payment share one calculation, using integer centavos.
 function getTotalCentavos() {
@@ -67,7 +136,11 @@ function getTotalCentavos() {
 
 // Editing the order or cash invalidates the previous payment confirmation.
 function resetPayment() {
+  if (completedTransaction) return;
   paymentConfirmation.hidden = true;
+  ["confirmed-total", "confirmed-paid", "confirmed-change"].forEach(id => {
+    document.getElementById(id).textContent = "";
+  });
   paymentMessage.textContent = "";
   paymentMessage.className = "payment-message";
   paymentChange.textContent = priceFormatter.format(0);
@@ -81,9 +154,10 @@ function showPaymentError(message, invalidCash = false) {
 }
 
 // Validate before confirming: order, numeric input, nonnegative cash, precision,
-// and enough money. No receipt is generated and the order remains visible.
+// and enough money. A completed payment generates one receipt.
 function confirmPayment(event) {
   event.preventDefault();
+  if (completedTransaction) return;
   resetPayment();
   if (cart.size === 0) {
     showPaymentError("Your cart is empty. Add a product before paying.");
@@ -129,6 +203,7 @@ function confirmPayment(event) {
   paymentConfirmation.hidden = false;
   paymentMessage.textContent = "Cash payment confirmed successfully.";
   paymentMessage.className = "payment-message payment-success";
+  generateReceipt(totalCentavos, paidCentavos);
 }
 
 paymentForm.addEventListener("submit", confirmPayment);
@@ -136,6 +211,7 @@ cashInput.addEventListener("input", resetPayment);
 
 // Adding an existing product increases its quantity instead of adding a row.
 function addToCart(productId) {
+  if (completedTransaction) return;
   if (!products[productId]) return;
   cart.set(productId, (cart.get(productId) || 0) + 1);
   renderCart();
@@ -143,12 +219,14 @@ function addToCart(productId) {
 
 // Quantities stay at one or above. Use Remove to delete the last unit.
 function changeQuantity(productId, change) {
+  if (completedTransaction) return;
   if (!cart.has(productId) || (change !== 1 && change !== -1)) return;
   cart.set(productId, Math.max(1, cart.get(productId) + change));
   renderCart();
 }
 
 function removeFromCart(productId) {
+  if (completedTransaction) return;
   cart.delete(productId);
   renderCart();
 }
