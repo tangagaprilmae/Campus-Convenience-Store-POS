@@ -19,7 +19,7 @@
       <div class="section-heading"><div><p class="eyebrow">THE CAMPUS ESSENTIALS</p><h2 id="products-heading">Products</h2><p class="section-description">Everyday picks for your campus day.</p></div><span class="count">6 products</span></div>
       <div id="product-grid" class="product-grid"></div>
       <noscript><p>Please enable JavaScript to display the product catalog.</p></noscript>
-      <p class="preview-note"><span aria-hidden="true">ⓘ</span> Add products to build your order. Payment functionality will be added in a later stage.</p>
+      <p class="preview-note"><span aria-hidden="true">ⓘ</span> Add products to build your order, then confirm the cash payment.</p>
     </section>
 
     <aside class="checkout" aria-label="Order and payment">
@@ -32,14 +32,25 @@
 
       <section class="panel payment-panel" aria-labelledby="payment-heading">
         <div class="panel-heading"><h2 id="payment-heading">Payment</h2><span class="payment-label">CASH</span></div>
-        <label for="cash-amount">Amount received</label>
-        <div class="amount-field"><span aria-hidden="true">₱</span><input id="cash-amount" type="text" placeholder="0.00" disabled aria-describedby="payment-note"></div>
-        <div class="change-row"><span>Change</span><strong>₱0.00</strong></div>
-        <button class="complete-button" type="button" disabled>Complete payment <span aria-hidden="true">→</span></button>
-        <p id="payment-note" class="payment-note">Payment is unavailable in this UI preview.</p>
+        <form id="payment-form" novalidate>
+          <label for="cash-amount">Amount received</label>
+          <div class="amount-field"><span aria-hidden="true">₱</span><input id="cash-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" aria-describedby="payment-note payment-message"></div>
+          <div class="change-row"><span>Change</span><strong id="payment-change">₱0.00</strong></div>
+          <button class="complete-button" type="submit">Confirm Payment <span aria-hidden="true">→</span></button>
+          <p id="payment-note" class="payment-note">Enter the cash received in pesos.</p>
+          <p id="payment-message" class="payment-message" role="status" aria-live="polite"></p>
+        </form>
+        <div id="payment-confirmation" class="payment-confirmation" hidden>
+          <h3>Payment confirmed</h3>
+          <dl>
+            <div><dt>Total</dt><dd id="confirmed-total"></dd></div>
+            <div><dt>Amount paid</dt><dd id="confirmed-paid"></dd></div>
+            <div><dt>Change</dt><dd id="confirmed-change"></dd></div>
+          </dl>
+        </div>
       </section>
     </aside>
   </main>
-  <footer>Campus Convenience Store <span aria-hidden="true">·</span> Shopping cart / Stage 02</footer>
+  <footer>Campus Convenience Store <span aria-hidden="true">·</span> Cash payment / Stage 03</footer>
 </body>
 </html>

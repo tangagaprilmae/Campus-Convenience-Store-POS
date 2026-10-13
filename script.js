@@ -1,4 +1,4 @@
-// Product definitions and artwork. Payment remains unavailable in this stage.
+// Product definitions and artwork.
 const products = [
   { name: "Instant Noodles", price: 18, art: '<path d="M12 27h40l-6 27H18z" fill="#d9a24b"/><path d="M10 27h44M18 35h28" stroke="#886b36"/><path d="M23 20c-5-5 5-5 0-11M33 20c-5-5 5-5 0-11M43 20c-5-5 5-5 0-11" stroke="#b5ba95"/><path d="M24 42h16" stroke="#fff5d6" stroke-width="4"/>' },
   { name: "Potato Chips", price: 25, art: '<path d="M18 9h29l-3 12 3 34H18l3-34z" fill="#e5b967"/><path d="M19 13h27M19 51h27" stroke="#a67b36"/><ellipse cx="32" cy="33" rx="9" ry="11" fill="#fff0b9"/><path d="M29 28l6 10M33 27l5 9" stroke="#d5aa50"/>' },
@@ -50,6 +50,89 @@ const emptyOrder = document.getElementById("empty-order");
 const itemCount = document.getElementById("item-count");
 const orderSubtotal = document.getElementById("order-subtotal");
 const orderTotal = document.getElementById("order-total");
+const paymentForm = document.getElementById("payment-form");
+const cashInput = document.getElementById("cash-amount");
+const paymentMessage = document.getElementById("payment-message");
+const paymentChange = document.getElementById("payment-change");
+const paymentConfirmation = document.getElementById("payment-confirmation");
+
+// The cart and payment share one calculation, using integer centavos.
+function getTotalCentavos() {
+  let total = 0;
+  cart.forEach((quantity, productId) => {
+    total += Math.round(products[productId].price * 100) * quantity;
+  });
+  return total;
+}
+
+// Editing the order or cash invalidates the previous payment confirmation.
+function resetPayment() {
+  paymentConfirmation.hidden = true;
+  paymentMessage.textContent = "";
+  paymentMessage.className = "payment-message";
+  paymentChange.textContent = priceFormatter.format(0);
+  cashInput.setAttribute("aria-invalid", "false");
+}
+
+function showPaymentError(message, invalidCash = false) {
+  paymentMessage.textContent = message;
+  paymentMessage.className = "payment-message payment-error";
+  cashInput.setAttribute("aria-invalid", String(invalidCash));
+}
+
+// Validate before confirming: order, numeric input, nonnegative cash, precision,
+// and enough money. No receipt is generated and the order remains visible.
+function confirmPayment(event) {
+  event.preventDefault();
+  resetPayment();
+  if (cart.size === 0) {
+    showPaymentError("Your cart is empty. Add a product before paying.");
+    return;
+  }
+  const rawAmount = cashInput.value.trim();
+  if (cashInput.validity.badInput) {
+    showPaymentError("Enter a valid numeric cash amount.", true);
+    return;
+  }
+  if (rawAmount === "") {
+    showPaymentError("Enter the cash amount received.", true);
+    return;
+  }
+  const amount = Number(rawAmount);
+  if (!Number.isFinite(amount)) {
+    showPaymentError("Enter a valid numeric cash amount.", true);
+    return;
+  }
+  if (amount < 0) {
+    showPaymentError("Cash amount cannot be negative.", true);
+    return;
+  }
+  if (!/^(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/.test(rawAmount)) {
+    showPaymentError("Enter a cash amount with up to two decimal places.", true);
+    return;
+  }
+  const paidCentavos = Math.round(amount * 100);
+  if (!Number.isSafeInteger(paidCentavos)) {
+    showPaymentError("Cash amount is too large. Enter a smaller amount.", true);
+    return;
+  }
+  const totalCentavos = getTotalCentavos();
+  if (paidCentavos < totalCentavos) {
+    showPaymentError(`Insufficient cash. The total is ${priceFormatter.format(totalCentavos / 100)}.`, true);
+    return;
+  }
+  const change = priceFormatter.format((paidCentavos - totalCentavos) / 100);
+  paymentChange.textContent = change;
+  document.getElementById("confirmed-total").textContent = priceFormatter.format(totalCentavos / 100);
+  document.getElementById("confirmed-paid").textContent = priceFormatter.format(paidCentavos / 100);
+  document.getElementById("confirmed-change").textContent = change;
+  paymentConfirmation.hidden = false;
+  paymentMessage.textContent = "Cash payment confirmed successfully.";
+  paymentMessage.className = "payment-message payment-success";
+}
+
+paymentForm.addEventListener("submit", confirmPayment);
+cashInput.addEventListener("input", resetPayment);
 
 // Adding an existing product increases its quantity instead of adding a row.
 function addToCart(productId) {
@@ -84,18 +167,18 @@ function createCartButton(label, action, productId, accessibleLabel) {
 
 // Rebuild the summary from cart state and calculate totals in integer centavos.
 function renderCart() {
+  resetPayment();
   const focusedButton = cartItems.contains(document.activeElement)
     ? document.activeElement : null;
   const focusedId = focusedButton?.dataset.productId;
   const focusedAction = focusedButton?.dataset.action;
   cartItems.replaceChildren();
-  let totalCentavos = 0;
+  const totalCentavos = getTotalCentavos();
   let totalQuantity = 0;
 
   cart.forEach((quantity, productId) => {
     const product = products[productId];
     const subtotalCentavos = Math.round(product.price * 100) * quantity;
-    totalCentavos += subtotalCentavos;
     totalQuantity += quantity;
 
     const row = document.createElement("li");

@@ -69,6 +69,19 @@ h1, h2, h3, p { margin: 0; }
 .change-row { padding: 18px 0 22px; font-size: 13px; color: var(--muted); }
 .change-row strong { color: var(--text); font-weight: 600; }
 .complete-button { display: flex; justify-content: space-between; width: 100%; border: 0; border-radius: 7px; background: #dce9e0; color: #5b7c66; padding: 13px; font-weight: 600; font-size: 13px; }
+.complete-button:not(:disabled) { background: var(--green); color: white; }
+.complete-button:hover { background: var(--green-dark); }
+.amount-field:focus-within { outline: 2px solid var(--green); outline-offset: 2px; }
+.amount-field input { outline: none; color: var(--text); }
+.payment-message { font-size: 12px; line-height: 1.6; margin-top: 12px; }
+.payment-message:empty { display: none; }
+.payment-error { color: #a14437; }
+.payment-success { color: var(--green-dark); }
+.payment-confirmation { margin-top: 16px; padding: 14px; background: var(--green-light); border-radius: 7px; }
+.payment-confirmation h3 { color: var(--green-dark); font-size: 14px; }
+.payment-confirmation dl { margin: 12px 0 0; font-size: 12px; }
+.payment-confirmation dl > div { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.payment-confirmation dd { margin: 0; font-weight: 600; }
 .payment-note { text-align: center; font-size: 10px; color: var(--muted); margin-top: 12px; line-height: 1.5; }
 [hidden] { display: none !important; }
 button:not(:disabled) { cursor: pointer; }

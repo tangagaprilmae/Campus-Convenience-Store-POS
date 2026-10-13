@@ -16,8 +16,10 @@ class Element {
 }
 
 function setup() {
-  const ids = ["product-grid", "cart-items", "empty-order", "item-count", "order-subtotal", "order-total"];
+  const ids = ["product-grid", "cart-items", "empty-order", "item-count", "order-subtotal", "order-total", "payment-form", "cash-amount", "payment-message", "payment-change", "payment-confirmation", "confirmed-total", "confirmed-paid", "confirmed-change"];
   const nodes = Object.fromEntries(ids.map(id => [id, new Element()]));
+  nodes["cash-amount"].value = "";
+  nodes["cash-amount"].validity = { badInput: false };
   const document = { activeElement: null, getElementById: id => nodes[id], createElement: tag => new Element(tag) };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../script.js"), "utf8"), { document, Intl });
   const add = id => nodes["product-grid"].children[id].children[3].listeners.click();
@@ -27,7 +29,12 @@ function setup() {
     const button = action === "remove" ? row.children[3] : row.children[2].children[0].children[action === "decrease" ? 0 : 2];
     nodes["cart-items"].listeners.click({ target: button });
   };
-  return { nodes, add, rows, press };
+  const pay = (amount, badInput = false) => {
+    nodes["cash-amount"].value = amount;
+    nodes["cash-amount"].validity.badInput = badInput;
+    nodes["payment-form"].listeners.submit({ preventDefault() {} });
+  };
+  return { nodes, add, rows, press, pay };
 }
 
 test("adding merges duplicates and displays item details and totals", () => {
@@ -43,6 +50,47 @@ test("adding merges duplicates and displays item details and totals", () => {
   assert.equal(nodes["order-subtotal"].textContent, "₱61.00");
   assert.equal(nodes["item-count"].textContent, "3 items");
   assert.equal(nodes["empty-order"].hidden, true);
+});
+
+test("payment rejects an empty cart and invalid or insufficient cash", () => {
+  const { nodes, add, pay } = setup();
+  pay("100");
+  assert.match(nodes["payment-message"].textContent, /cart is empty/);
+  add(0);
+  for (const [amount, message, badInput] of [
+    ["", /Enter the cash amount/], ["   ", /Enter the cash amount/],
+    ["abc", /valid numeric/], ["", /valid numeric/, true],
+    ["-1", /cannot be negative/], ["Infinity", /valid numeric/],
+    ["0", /Insufficient cash/], ["17.99", /Insufficient cash/],
+    ["18.001", /two decimal places/], ["99999999999999999", /too large/]
+  ]) {
+    pay(amount, badInput);
+    assert.match(nodes["payment-message"].textContent, message);
+    assert.equal(nodes["payment-confirmation"].hidden, true);
+    assert.equal(nodes["payment-change"].textContent, "₱0.00");
+  }
+});
+
+test("cash confirmation displays total, paid amount, and exact change", () => {
+  const { nodes, add, pay, rows } = setup();
+  add(0); add(1);
+  pay("43");
+  assert.equal(nodes["confirmed-total"].textContent, "₱43.00");
+  assert.equal(nodes["confirmed-paid"].textContent, "₱43.00");
+  assert.equal(nodes["confirmed-change"].textContent, "₱0.00");
+  pay("50.10");
+  assert.equal(nodes["confirmed-paid"].textContent, "₱50.10");
+  assert.equal(nodes["confirmed-change"].textContent, "₱7.10");
+  assert.equal(nodes["payment-change"].textContent, "₱7.10");
+  assert.equal(nodes["payment-confirmation"].hidden, false);
+  assert.match(nodes["payment-message"].textContent, /confirmed successfully/);
+  assert.equal(rows().length, 2);
+  nodes["cash-amount"].listeners.input();
+  assert.equal(nodes["payment-confirmation"].hidden, true);
+  pay("50"); add(3);
+  assert.equal(nodes["payment-confirmation"].hidden, true);
+  pay("50");
+  assert.match(nodes["payment-message"].textContent, /Insufficient cash/);
 });
 
 test("plus and minus update totals and prevent quantities below one", () => {
