@@ -13,6 +13,21 @@ const priceFormatter = new Intl.NumberFormat("en-PH", {
   currency: "PHP"
 });
 
+// Format integer centavos without converting the fractional pesos to a float.
+function formatCentavos(centavos) {
+  const wholePesos = Math.floor(centavos / 100);
+  const fraction = String(centavos % 100).padStart(2, "0");
+  return priceFormatter.formatToParts(wholePesos)
+    .map(part => part.type === "fraction" ? fraction : part.value)
+    .join("");
+}
+
+// Call after decimal validation; combining integer parts avoids penny rounding.
+function parseCashCentavos(rawAmount) {
+  const [pesos, fraction = ""] = rawAmount.split(".");
+  return Number(pesos || "0") * 100 + Number(fraction.padEnd(2, "0"));
+}
+
 const productGrid = document.getElementById("product-grid");
 
 products.forEach((product, productId) => {
@@ -30,7 +45,7 @@ products.forEach((product, productId) => {
 
   const price = document.createElement("p");
   price.className = "price";
-  price.textContent = priceFormatter.format(product.price);
+  price.textContent = formatCentavos(Math.round(product.price * 100));
 
   const button = document.createElement("button");
   button.type = "button";
@@ -93,8 +108,8 @@ function generateReceipt(totalCentavos, paidCentavos) {
   receiptItems.replaceChildren();
   completedTransaction.items.forEach(item => {
     const row = document.createElement("tr");
-    [item.name, item.quantity, priceFormatter.format(item.unitCentavos / 100),
-      priceFormatter.format(item.unitCentavos * item.quantity / 100)].forEach(value => {
+    [item.name, item.quantity, formatCentavos(item.unitCentavos),
+      formatCentavos(item.unitCentavos * item.quantity)].forEach(value => {
       const cell = document.createElement("td");
       cell.textContent = value;
       row.append(cell);
@@ -105,9 +120,9 @@ function generateReceipt(totalCentavos, paidCentavos) {
   document.getElementById("receipt-date").textContent = new Intl.DateTimeFormat("en-PH", {
     dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila"
   }).format(now) + " (Asia/Manila)";
-  document.getElementById("receipt-total").textContent = priceFormatter.format(totalCentavos / 100);
-  document.getElementById("receipt-cash").textContent = priceFormatter.format(paidCentavos / 100);
-  document.getElementById("receipt-change").textContent = priceFormatter.format(completedTransaction.changeCentavos / 100);
+  document.getElementById("receipt-total").textContent = formatCentavos(totalCentavos);
+  document.getElementById("receipt-cash").textContent = formatCentavos(paidCentavos);
+  document.getElementById("receipt-change").textContent = formatCentavos(completedTransaction.changeCentavos);
   receipt.hidden = false;
   setTransactionLocked(true);
 }
@@ -147,7 +162,7 @@ function resetPayment() {
   });
   paymentMessage.textContent = "";
   paymentMessage.className = "payment-message";
-  paymentChange.textContent = priceFormatter.format(0);
+  paymentChange.textContent = formatCentavos(0);
   cashInput.setAttribute("aria-invalid", "false");
 }
 
@@ -189,20 +204,20 @@ function confirmPayment(event) {
     showPaymentError("Enter a cash amount with up to two decimal places.", true);
     return;
   }
-  const paidCentavos = Math.round(amount * 100);
+  const paidCentavos = parseCashCentavos(rawAmount);
   if (!Number.isSafeInteger(paidCentavos)) {
     showPaymentError("Cash amount is too large. Enter a smaller amount.", true);
     return;
   }
   const totalCentavos = getTotalCentavos();
   if (paidCentavos < totalCentavos) {
-    showPaymentError(`Insufficient cash. The total is ${priceFormatter.format(totalCentavos / 100)}.`, true);
+    showPaymentError(`Insufficient cash. The total is ${formatCentavos(totalCentavos)}.`, true);
     return;
   }
-  const change = priceFormatter.format((paidCentavos - totalCentavos) / 100);
+  const change = formatCentavos(paidCentavos - totalCentavos);
   paymentChange.textContent = change;
-  document.getElementById("confirmed-total").textContent = priceFormatter.format(totalCentavos / 100);
-  document.getElementById("confirmed-paid").textContent = priceFormatter.format(paidCentavos / 100);
+  document.getElementById("confirmed-total").textContent = formatCentavos(totalCentavos);
+  document.getElementById("confirmed-paid").textContent = formatCentavos(paidCentavos);
   document.getElementById("confirmed-change").textContent = change;
   paymentConfirmation.hidden = false;
   paymentMessage.textContent = "Cash payment confirmed successfully.";
@@ -275,7 +290,7 @@ function renderCart() {
     name.textContent = product.name;
     const unitPrice = document.createElement("td");
     unitPrice.className = "unit-price";
-    unitPrice.textContent = priceFormatter.format(product.price);
+    unitPrice.textContent = formatCentavos(Math.round(product.price * 100));
     const quantityCell = document.createElement("td");
     const quantityControls = document.createElement("div");
     quantityControls.className = "quantity-controls";
@@ -288,7 +303,7 @@ function renderCart() {
     quantityControls.append(decrease, quantityLabel, increase);
     const subtotal = document.createElement("strong");
     subtotal.className = "item-subtotal";
-    subtotal.textContent = priceFormatter.format(subtotalCentavos / 100);
+    subtotal.textContent = formatCentavos(subtotalCentavos);
     subtotal.setAttribute("aria-label", `Item subtotal: ${subtotal.textContent}`);
     const subtotalCell = document.createElement("td");
     subtotalCell.append(subtotal);
@@ -304,8 +319,8 @@ function renderCart() {
   cartItems.hidden = cart.size === 0;
   cartTableWrap.hidden = cart.size === 0;
   itemCount.textContent = `${totalQuantity} ${totalQuantity === 1 ? "item" : "items"}`;
-  orderSubtotal.textContent = priceFormatter.format(totalCentavos / 100);
-  orderTotal.textContent = priceFormatter.format(totalCentavos / 100);
+  orderSubtotal.textContent = formatCentavos(totalCentavos);
+  orderTotal.textContent = formatCentavos(totalCentavos);
 
   // Keep keyboard focus usable after rows are rebuilt or removed.
   if (focusedButton) {

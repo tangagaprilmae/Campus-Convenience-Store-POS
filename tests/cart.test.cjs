@@ -6,26 +6,47 @@ const vm = require("node:vm");
 
 // Minimal DOM substitute to exercise the application's actual click handlers.
 class Element {
-  constructor(tag = "div") { this.tag = tag; this.children = []; this.dataset = {}; this.listeners = {}; }
+  constructor(tag = "div") { this.tag = tag; this.children = []; this.dataset = {}; this.listeners = {}; this.attributes = {}; }
   append(...children) { children.forEach(child => { child.parent = this; }); this.children.push(...children); }
   replaceChildren(...children) { this.children = []; this.append(...children); }
-  setAttribute() {}
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  getAttribute(name) { return this.attributes[name] ?? null; }
   addEventListener(name, callback) { this.listeners[name] = callback; }
   contains(element) { return element === this || this.children.some(child => child.contains(element)); }
   closest() { return this.tag === "button" ? this : this.parent?.closest(); }
-  querySelectorAll() { return this.children.flatMap(child => [...(child.tag === "button" ? [child] : []), ...child.querySelectorAll()]); }
-  querySelector() { return this.querySelectorAll()[0] || null; }
-  focus() {}
+  matches(selector) {
+    if (this.tag !== "button") return false;
+    if (selector.includes(":not(:disabled)") && this.disabled) return false;
+    if (selector.includes('[type="submit"]') && this.type !== "submit") return false;
+    for (const match of selector.matchAll(/\[data-([\w-]+)="([^"]+)"\]/g)) {
+      const key = match[1].replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+      if (String(this.dataset[key]) !== match[2]) return false;
+    }
+    return true;
+  }
+  querySelectorAll(selector = "button") { return this.children.flatMap(child => [...(child.matches(selector) ? [child] : []), ...child.querySelectorAll(selector)]); }
+  querySelector(selector = "button") { return this.querySelectorAll(selector)[0] || null; }
+  focus() { if (!this.disabled) this.ownerDocument.activeElement = this; }
 }
 
 function setup() {
-  const ids = ["product-grid", "cart-items", "cart-table-wrap", "empty-order", "item-count", "order-subtotal", "order-total", "payment-form", "cash-amount", "payment-message", "payment-change", "payment-confirmation", "confirmed-total", "confirmed-paid", "confirmed-change", "receipt", "receipt-items", "receipt-reference", "receipt-date", "receipt-total", "receipt-cash", "receipt-change", "new-transaction"];
-  const nodes = Object.fromEntries(ids.map(id => [id, new Element()]));
+  // Read real markup IDs so a missing or renamed page element fails the suite.
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const entries = [...html.matchAll(/<([a-z]+)\b[^>]*\bid="([^"]+)"/g)];
+  const nodes = Object.fromEntries(entries.map(match => [match[2], new Element(match[1])]));
+  assert.equal(Object.keys(nodes).length, entries.length, "HTML IDs must be unique");
   nodes["cash-amount"].value = "";
   nodes["cash-amount"].validity = { badInput: false };
   nodes["receipt"].hidden = true;
-  nodes["payment-form"].append(new Element("button"));
-  const document = { activeElement: null, getElementById: id => nodes[id], createElement: tag => new Element(tag) };
+  const document = { activeElement: null, getElementById: id => nodes[id] ?? null, createElement: tag => {
+    const element = new Element(tag);
+    element.ownerDocument = document;
+    return element;
+  } };
+  Object.values(nodes).forEach(node => { node.ownerDocument = document; });
+  const submit = document.createElement("button");
+  submit.type = "submit";
+  nodes["payment-form"].append(submit);
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../script.js"), "utf8"), { document, Intl });
   const add = id => nodes["product-grid"].children[id].children[3].listeners.click();
   const rows = () => nodes["cart-items"].children;
@@ -40,7 +61,7 @@ function setup() {
     nodes["payment-form"].listeners.submit({ preventDefault() {} });
   };
   const reset = () => nodes["new-transaction"].listeners.click();
-  return { nodes, add, rows, press, pay, reset };
+  return { nodes, add, rows, press, pay, reset, document };
 }
 
 test("adding merges duplicates and displays item details and totals", () => {
@@ -59,6 +80,67 @@ test("adding merges duplicates and displays item details and totals", () => {
   assert.equal(nodes["order-subtotal"].textContent, "₱61.00");
   assert.equal(nodes["item-count"].textContent, "3 items");
   assert.equal(nodes["empty-order"].hidden, true);
+});
+
+test("all six catalog names, peso prices, and add controls are correct", () => {
+  const { nodes } = setup();
+  const expected = [
+    ["Instant Noodles", "₱18.00"], ["Potato Chips", "₱25.00"],
+    ["Soft Drink (Can)", "₱25.00"], ["Bottled Water", "₱20.00"],
+    ["Ballpen (piece)", "₱12.00"], ["Notebook (piece)", "₱35.00"]
+  ];
+  const cards = nodes["product-grid"].children;
+  assert.equal(cards.length, expected.length);
+  cards.forEach((card, index) => {
+    assert.equal(card.children[1].textContent, expected[index][0]);
+    assert.equal(card.children[2].textContent, expected[index][1]);
+    assert.match(card.children[3].innerHTML, /Add to Cart/);
+    assert.equal(typeof card.children[3].listeners.click, "function");
+  });
+});
+
+test("large valid decimal cash preserves every centavo in confirmation and receipt", () => {
+  const { nodes, add, pay } = setup();
+  add(0);
+  pay("45035996273704.02");
+  assert.equal(nodes["confirmed-paid"].textContent, "₱45,035,996,273,704.02");
+  assert.equal(nodes["receipt-cash"].textContent, "₱45,035,996,273,704.02");
+  assert.equal(nodes["confirmed-change"].textContent, "₱45,035,996,273,686.02");
+  assert.equal(nodes["receipt-change"].textContent, "₱45,035,996,273,686.02");
+});
+
+test("quantity updates and removal preserve usable keyboard focus", () => {
+  const { add, rows, press, document, nodes } = setup();
+  add(0); add(1);
+  rows()[1].children[2].children[0].children[2].focus();
+  press(1, "increase");
+  assert.equal(document.activeElement.dataset.productId, 1);
+  assert.equal(document.activeElement.dataset.action, "increase");
+  rows()[1].children[2].children[0].children[0].focus();
+  press(1, "decrease");
+  assert.equal(document.activeElement.dataset.action, "increase");
+  assert.equal(document.activeElement.disabled, undefined);
+  rows()[1].children[4].children[0].focus();
+  press(1, "remove");
+  assert.equal(document.activeElement.dataset.productId, 0);
+  rows()[0].children[4].children[0].focus();
+  press(0, "remove");
+  assert.equal(document.activeElement, nodes["product-grid"].children[0].children[3]);
+});
+
+test("input edits, cart edits, and new transaction clear validation state", () => {
+  const { nodes, add, pay, reset } = setup();
+  add(0); pay("-1");
+  assert.equal(nodes["cash-amount"].getAttribute("aria-invalid"), "true");
+  nodes["cash-amount"].listeners.input();
+  assert.equal(nodes["payment-message"].textContent, "");
+  assert.equal(nodes["cash-amount"].getAttribute("aria-invalid"), "false");
+  pay("0"); add(1);
+  assert.equal(nodes["payment-message"].textContent, "");
+  pay("0"); reset();
+  assert.equal(nodes["payment-message"].textContent, "");
+  assert.equal(nodes["cash-amount"].getAttribute("aria-invalid"), "false");
+  assert.equal(nodes["cash-amount"].value, "");
 });
 
 test("payment rejects an empty cart and invalid or insufficient cash", () => {
