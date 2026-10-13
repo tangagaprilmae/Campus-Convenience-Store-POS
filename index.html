@@ -4,8 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Campus Convenience Store point of sale: products, orders, cash payment, and receipts.">
-  <meta name="theme-color" content="#176b46">
+  <meta name="theme-color" content="#00852c">
   <title>Campus Convenience Store | POS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -15,7 +18,7 @@
   <a class="skip-link" href="#main-content">Skip to products and checkout</a>
   <header class="topbar">
     <div class="header-inner mx-auto flex w-full max-w-[1360px] flex-wrap items-center justify-between gap-4">
-      <div class="brand"><span class="brand-mark" aria-hidden="true">C<span>+</span></span><div><h1>Campus Convenience Store</h1><p>Point of sale</p></div></div>
+      <div class="brand"><span class="brand-mark" aria-hidden="true"><svg class="h-7 w-7" width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M4 10v10h16V10M3 7l2-4h14l2 4v3a3 3 0 0 1-4 0 3 3 0 0 1-5 0 3 3 0 0 1-5 0 3 3 0 0 1-4 0V7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 20v-6h6v6M3 7h18" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><div><h1>Campus Convenience Store</h1><p>Point of sale</p></div></div>
       <span class="stage-badge"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M4 6h12v11H4zM3 6l2-3h10l2 3M8 17v-5h4v5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Campus essentials</span>
     </div>
   </header>
@@ -32,7 +35,13 @@
       <section class="panel order-panel" aria-labelledby="order-heading">
         <div class="panel-heading"><h2 id="order-heading">Order summary</h2><span id="item-count" class="item-count" aria-live="polite">0 items</span></div>
         <div id="empty-order" class="empty-order"><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M9 10h5l5 23h19l5-17H16M22 40h.01M36 40h.01" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Your order is empty</h3><p>Add a product to get started.</p></div>
-        <ul id="cart-items" class="cart-items" aria-label="Products in your order" hidden></ul>
+        <div id="cart-table-wrap" class="cart-table-wrap" tabindex="0" role="region" aria-label="Order items; scroll to see all columns and products" hidden>
+          <table class="cart-table">
+            <caption class="sr-only">Products in your order</caption>
+            <thead><tr><th scope="col">Product</th><th scope="col">Unit price</th><th scope="col">Quantity</th><th scope="col">Subtotal</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+            <tbody id="cart-items"></tbody>
+          </table>
+        </div>
         <div class="totals"><div><span>Subtotal</span><span id="order-subtotal">₱0.00</span></div><div class="total"><span>Total</span><span id="order-total">₱0.00</span></div></div>
       </section>
 

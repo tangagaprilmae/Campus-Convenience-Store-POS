@@ -19,7 +19,7 @@ class Element {
 }
 
 function setup() {
-  const ids = ["product-grid", "cart-items", "empty-order", "item-count", "order-subtotal", "order-total", "payment-form", "cash-amount", "payment-message", "payment-change", "payment-confirmation", "confirmed-total", "confirmed-paid", "confirmed-change", "receipt", "receipt-items", "receipt-reference", "receipt-date", "receipt-total", "receipt-cash", "receipt-change", "new-transaction"];
+  const ids = ["product-grid", "cart-items", "cart-table-wrap", "empty-order", "item-count", "order-subtotal", "order-total", "payment-form", "cash-amount", "payment-message", "payment-change", "payment-confirmation", "confirmed-total", "confirmed-paid", "confirmed-change", "receipt", "receipt-items", "receipt-reference", "receipt-date", "receipt-total", "receipt-cash", "receipt-change", "new-transaction"];
   const nodes = Object.fromEntries(ids.map(id => [id, new Element()]));
   nodes["cash-amount"].value = "";
   nodes["cash-amount"].validity = { badInput: false };
@@ -31,7 +31,7 @@ function setup() {
   const rows = () => nodes["cart-items"].children;
   const press = (index, action) => {
     const row = rows()[index];
-    const button = action === "remove" ? row.children[3] : row.children[2].children[0].children[action === "decrease" ? 0 : 2];
+    const button = action === "remove" ? row.children[4].children[0] : row.children[2].children[0].children[action === "decrease" ? 0 : 2];
     nodes["cart-items"].listeners.click({ target: button });
   };
   const pay = (amount, badInput = false) => {
@@ -49,9 +49,12 @@ test("adding merges duplicates and displays item details and totals", () => {
   add(0); add(0); add(1);
   assert.equal(rows().length, 2);
   assert.equal(rows()[0].children[0].textContent, "Instant Noodles");
-  assert.equal(rows()[0].children[1].textContent, "₱18.00 each");
+  assert.equal(rows()[0].tag, "tr");
+  assert.equal(rows()[0].children[0].tag, "th");
+  assert.equal(rows()[0].children[1].textContent, "₱18.00");
   assert.equal(rows()[0].children[2].children[0].children[1].textContent, 2);
-  assert.equal(rows()[0].children[2].children[1].textContent, "₱36.00");
+  assert.equal(rows()[0].children[3].children[0].textContent, "₱36.00");
+  assert.equal(nodes["cart-table-wrap"].hidden, false);
   assert.equal(nodes["order-total"].textContent, "₱61.00");
   assert.equal(nodes["order-subtotal"].textContent, "₱61.00");
   assert.equal(nodes["item-count"].textContent, "3 items");
@@ -180,7 +183,32 @@ test("removing updates totals and restores the empty-cart message", () => {
   assert.equal(nodes["item-count"].textContent, "0 items");
   assert.equal(nodes["empty-order"].hidden, false);
   assert.equal(nodes["cart-items"].hidden, true);
+  assert.equal(nodes["cart-table-wrap"].hidden, true);
   add(3);
   assert.equal(rows().length, 1);
   assert.equal(nodes["order-total"].textContent, "₱20.00");
+});
+
+test("all six products work in the order table through payment and reset", () => {
+  const { nodes, add, rows, press, pay, reset } = setup();
+  for (let id = 0; id < 6; id += 1) add(id);
+  assert.equal(rows().length, 6);
+  assert.equal(nodes["order-total"].textContent, "₱135.00");
+  press(0, "increase");
+  assert.equal(rows().length, 6);
+  assert.equal(nodes["order-total"].textContent, "₱153.00");
+  press(0, "decrease");
+  press(5, "remove");
+  assert.equal(rows().length, 5);
+  assert.equal(nodes["order-total"].textContent, "₱100.00");
+  pay("150");
+  assert.equal(nodes["receipt-total"].textContent, "₱100.00");
+  assert.equal(nodes["receipt-change"].textContent, "₱50.00");
+  nodes["cart-table-wrap"].scrollTop = 120;
+  nodes["cart-table-wrap"].scrollLeft = 100;
+  reset();
+  assert.equal(rows().length, 0);
+  assert.equal(nodes["cart-table-wrap"].hidden, true);
+  assert.equal(nodes["cart-table-wrap"].scrollTop, 0);
+  assert.equal(nodes["cart-table-wrap"].scrollLeft, 0);
 });

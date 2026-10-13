@@ -18,6 +18,7 @@ const productGrid = document.getElementById("product-grid");
 products.forEach((product, productId) => {
   const card = document.createElement("article");
   card.className = "product-card";
+  card.dataset.productId = productId;
 
   // Decorative SVG artwork uses only the trusted, local product definitions.
   const artwork = document.createElement("div");
@@ -46,6 +47,7 @@ products.forEach((product, productId) => {
 // Cart contents are kept in memory and reset when the page is reloaded.
 const cart = new Map();
 const cartItems = document.getElementById("cart-items");
+const cartTableWrap = document.getElementById("cart-table-wrap");
 const emptyOrder = document.getElementById("empty-order");
 const itemCount = document.getElementById("item-count");
 const orderSubtotal = document.getElementById("order-subtotal");
@@ -118,6 +120,8 @@ function resetTransaction() {
   receiptItems.replaceChildren();
   receiptFields.forEach(id => { document.getElementById(id).textContent = ""; });
   receipt.hidden = true;
+  cartTableWrap.scrollTop = 0;
+  cartTableWrap.scrollLeft = 0;
   setTransactionLocked(false);
   renderCart();
   productGrid.querySelector("button")?.focus();
@@ -246,6 +250,11 @@ function createCartButton(label, action, productId, accessibleLabel) {
 // Rebuild the summary from cart state and calculate totals in integer centavos.
 function renderCart() {
   resetPayment();
+  // Visual selection only: the reference's outline marks products in the cart.
+  Array.from(productGrid.children).forEach(card => {
+    card.className = cart.has(Number(card.dataset.productId))
+      ? "product-card is-in-cart" : "product-card";
+  });
   const focusedButton = cartItems.contains(document.activeElement)
     ? document.activeElement : null;
   const focusedId = focusedButton?.dataset.productId;
@@ -259,15 +268,15 @@ function renderCart() {
     const subtotalCentavos = Math.round(product.price * 100) * quantity;
     totalQuantity += quantity;
 
-    const row = document.createElement("li");
+    const row = document.createElement("tr");
     row.className = "cart-item";
-    const name = document.createElement("h3");
+    const name = document.createElement("th");
+    name.setAttribute("scope", "row");
     name.textContent = product.name;
-    const unitPrice = document.createElement("p");
+    const unitPrice = document.createElement("td");
     unitPrice.className = "unit-price";
-    unitPrice.textContent = `${priceFormatter.format(product.price)} each`;
-    const controls = document.createElement("div");
-    controls.className = "cart-controls";
+    unitPrice.textContent = priceFormatter.format(product.price);
+    const quantityCell = document.createElement("td");
     const quantityControls = document.createElement("div");
     quantityControls.className = "quantity-controls";
     const decrease = createCartButton("−", "decrease", productId, `Decrease ${product.name} quantity`);
@@ -281,14 +290,19 @@ function renderCart() {
     subtotal.className = "item-subtotal";
     subtotal.textContent = priceFormatter.format(subtotalCentavos / 100);
     subtotal.setAttribute("aria-label", `Item subtotal: ${subtotal.textContent}`);
-    controls.append(quantityControls, subtotal);
+    const subtotalCell = document.createElement("td");
+    subtotalCell.append(subtotal);
+    quantityCell.append(quantityControls);
     const remove = createCartButton("Remove", "remove", productId, `Remove ${product.name} from cart`);
-    row.append(name, unitPrice, controls, remove);
+    const actionCell = document.createElement("td");
+    actionCell.append(remove);
+    row.append(name, unitPrice, quantityCell, subtotalCell, actionCell);
     cartItems.append(row);
   });
 
   emptyOrder.hidden = cart.size > 0;
   cartItems.hidden = cart.size === 0;
+  cartTableWrap.hidden = cart.size === 0;
   itemCount.textContent = `${totalQuantity} ${totalQuantity === 1 ? "item" : "items"}`;
   orderSubtotal.textContent = priceFormatter.format(totalCentavos / 100);
   orderTotal.textContent = priceFormatter.format(totalCentavos / 100);
