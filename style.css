@@ -248,10 +248,10 @@ button:not(:disabled):active { box-shadow: inset 0 0 0 2px #00571d45; }
 
 @media (min-width: 1000px) {
   .workspace { grid-template-columns: minmax(0, 1fr) 460px; row-gap: 14px; align-items: stretch; }
-  /* Shared rows keep checkout panels aligned as the order grows. */
+  /* Align the catalog with checkout without stretching product cards. */
   .catalog, .checkout { display: contents; }
   .section-heading { grid-column: 1; grid-row: 1; margin-bottom: 0; }
-  .product-grid { grid-column: 1; grid-row: 2 / span 2; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: subgrid; row-gap: inherit; }
+  .product-grid { grid-column: 1; grid-row: 2 / span 2; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, max-content); row-gap: 14px; align-self: start; align-items: start; }
   .order-panel { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; }
   .order-panel .empty-order { flex: 1; }
   .order-panel .totals { margin-top: auto; }
